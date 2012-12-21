@@ -1,0 +1,5 @@
+=INSTALL=
+npm install
+
+=RUN=
+node server
