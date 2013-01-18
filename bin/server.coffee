@@ -10,7 +10,7 @@ OLA     = require '..'
 config  = require '../config.json'
 npm     = require '../package.json'
 
-dmx = new OLA.DMX config.server_name, config.server_port, config.universe_id
+dmx = new OLA.DMX config.server_name, config.server_port, config.universe_id, config.ola_bin, config.use_ola_bin
 server = new OLA.Server config.service_port, dmx
 
 status = ' '

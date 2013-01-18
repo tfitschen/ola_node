@@ -1,10 +1,10 @@
-{EventEmitter}  = require 'events'
+{exec}          = require 'child_process'
 http            = require 'http'
 queryString     = require 'querystring'
 
 class DMX
 
-  constructor: (serverName, serverPort, universeId) ->
+  constructor: (serverName, serverPort, universeId, @olaBin, @useOlaBin) ->
     @options = { host: serverName, port: serverPort, universeId: universeId }
     @dmx = []
 
@@ -49,6 +49,11 @@ class DMX
     @
 
   _sendDMX: (dmx, callback) ->
+    if @useOlaBin
+      exec "#{@olaBin} -u #{@options.universeId} -d #{dmx.join ','}"
+      callback null, dmx
+      return @
+
     data = queryString.stringify {
       u: @options.universeId,
       d: dmx.join ','
