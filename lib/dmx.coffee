@@ -6,10 +6,7 @@ class DMX
 
   constructor: (serverName, serverPort, universeId, @olaBin, @useOlaBin) ->
     @options = { host: serverName, port: serverPort, universeId: universeId }
-    @dmx = []
-
-  clearDMX: ->
-    @dmx = []
+    @dmx = @getEmptyDmxChannels()
 
   getDMX: (callback) ->
     url = 'http://' + @options.host + ':' + @options.port + '/get_dmx?u=' + @options.universeId
@@ -23,7 +20,8 @@ class DMX
 
         res.on 'end', =>
           buffer = JSON.parse buffer
-          @dmx = buffer.dmx
+          for value, channel in buffer.dmx
+            @dmx[channel] = value
           callback null, buffer.dmx
 
       .on 'error', (e) =>
@@ -79,10 +77,16 @@ class DMX
     req.end()
 
     req.on 'response', =>
-      @dmx = dmx
+      for channel, value in dmx
+        @dmx[channel] = value
       callback null, @dmx
 
     @
+
+  getEmptyDmxChannels: ->
+    dmx = for num in [1..512]
+      0
+    dmx
 
   testMode: (@inTestMode) ->
 
@@ -91,9 +95,6 @@ class DMX
     callback? null, @dmx
 
   testGetDMX: (callback) ->
-    @dmx = for num in [1..512]
-      0
-
-    callback? null, @dmx
+    callback? null, @getEmptyDmxChannels()
 
 module.exports = DMX
