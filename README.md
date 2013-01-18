@@ -6,4 +6,4 @@
   * Test Server: npm test
   * Server: npm start
 
-# [LICENSE](http://github.com/tfitschen/ola_node/raw/master/LICENSE)
+# [LICENSE](https://github.com/tfitschen/ola_node/blob/master/LICENSE.md)
