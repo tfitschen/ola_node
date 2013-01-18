@@ -46,6 +46,7 @@
         }
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 <table>
@@ -119,18 +120,21 @@
 </table>
 <script>
     $(function() {
-        $.postJSON = function (url, data, options) {
-            var ajaxOptions = $.extend(
-                    {},
-                    options || {},
-                    {
-                        data : JSON.stringify(data || {}),
-                        contentType : 'application/json',
-                        type : 'POST'
-                    }
-            );
-            return $.ajax(url, ajaxOptions);
-        };
+        var dmxSocket = io.connect('{URL}');
+        dmxSocket.on('data', function (data) {
+            dmx = data.dmx;
+            pixels.each(function(index, el) {
+                var $el =$(el);
+                var pixelNum = $el.data('num');
+                var pixelColor = getPixelRGB(pixelNum)
+
+                if ($el.is(markedPixel)) {
+                    updateControls(pixelColor);
+                }
+
+                updatePixelColor($el, pixelColor);
+            });
+        });
 
         var dmx = [];
         var pixels = $('.pixel');
@@ -213,13 +217,9 @@
             });
 
             if (sendData) {
-                $.postJSON('{URL}/dmx', data).done(function(data) {
-                    if (data.dmx) {
-                        dmx = data.dmx;
-                    }
-                });
+                dmxSocket.emit('set', data);
             }
-        }
+        };
 
         updatePixelColor = function (num, rgb) {
             var pixel = getPixel(num);
@@ -232,21 +232,6 @@
             setPixelRGB(pixel, color);
 
         };
-
-        $.get('{URL}/dmx').done(function(data) {
-            dmx = data.dmx;
-            pixels.each(function(index, el) {
-                var $el =$(el);
-                var pixelNum = $el.data('num');
-                var pixelColor = getPixelRGB(pixelNum)
-
-                if ($el.is(markedPixel)) {
-                    updateControls(pixelColor);
-                }
-
-                updatePixelColor($el, pixelColor);
-            });
-        });
 
         pixels.click(function() {
             var $el = $(this);
