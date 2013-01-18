@@ -6,14 +6,12 @@ class DMX
 
   constructor: (serverName, serverPort, universeId) ->
     @options = { host: serverName, port: serverPort, universeId: universeId }
+    @dmx = []
 
   clearDMX: ->
-    @dmx = null
+    @dmx = []
 
   getDMX: (callback) ->
-    return callback? null, @dmx if @dmx?
-    return @testGetDMX callback if @inTestMode
-
     url = 'http://' + @options.host + ':' + @options.port + '/get_dmx?u=' + @options.universeId
 
     http
@@ -25,41 +23,37 @@ class DMX
 
         res.on 'end', =>
           buffer = JSON.parse buffer
-          @setDMX buffer.dmx
-          callback? null, @dmx
+          @dmx = buffer.dmx
+          callback null, buffer.dmx
 
       .on 'error', (e) =>
-        callback? e.message, null
+        callback e.message, null
 
     @
 
   setDMXObject: (obj, callback) ->
-    if obj?
+    for channel, value of obj
+      c = parseInt channel, 10
+      v = parseInt value, 10
 
-      @getDMX (err, dmx) =>
-        for channel, value of obj
-          c = parseInt channel, 10
-          v = parseInt value, 10
-
-          if c < 1 or c > @dmx.length
-            callback? 'Channel not supported: Channel=' + channel, null
-            return @
-          else
-            if v < 0 or v > 255
-              callback? 'Value not suppoerted: Channel=' + channel + ', Value=' + value, null
-              return @
-            else
-              dmx[c - 1] = v
-
-        @_sendDMX dmx, callback
+      if c < 1 or c > @dmx.length
+        callback 'Channel not supported: Channel=' + channel, null
+        return @
+      else
+        if v < 0 or v > 255
+          callback 'Value not suppoerted: Channel=' + channel + ', Value=' + value, null
+          return @
+        else
+          @dmx[c - 1] = v
+    @_sendDMX @dmx, callback
     @
 
   _sendDMX: (dmx, callback) ->
-    return @testSendDMX dmx, callback if @inTestMode
     data = queryString.stringify {
       u: @options.universeId,
-      dmx: dmx.join ','
+      d: dmx.join ','
     }
+    data = data.replace /%2C/ig, ','
 
     options = {
       host: @options.host,
@@ -74,14 +68,14 @@ class DMX
     req = http.request options
 
     req.on 'error', (e) =>
-      callbackl? 'Can not send dmx: ' + e.message, null
+      callback 'Can not send dmx: ' + e.message, null
 
     req.write data
     req.end()
 
     req.on 'response', =>
       @dmx = dmx
-      callback? null, @dmx
+      callback null, @dmx
 
     @
 
