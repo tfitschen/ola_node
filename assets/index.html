@@ -1,0 +1,308 @@
+<html>
+<head>
+    <style>
+        body {
+            background-color: #dddddd;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .pixel {
+            margin: 2px;
+            width: 50px;
+            height: 50px;
+            background-color: black;
+        }
+        .pixel.marked {
+            margin: 0;
+            border: #2F6FAD 2px solid;
+        }
+        .control {
+            border: black 1px solid;
+            width: 50px;
+            height: 305px;
+            margin: 10px;
+            padding: 10px;
+        }
+
+        .control .el {
+            background-color: #555555;
+            border: black 1px solid;
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            cursor: move;
+        }
+
+        .control .el:hover {
+            background-color: #888888;
+        }
+
+        .control .el:active {
+            background-color: #0b97c4;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+</head>
+<body>
+<table>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+        <td><div class="pixel" data-num="23"></div></td>
+        <td><div class="pixel" data-num="24"></div></td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><div class="pixel" data-num="22"></div></td>
+        <td><div class="pixel" data-num="11"></div></td>
+        <td><div class="pixel" data-num="12"></div></td>
+        <td><div class="pixel" data-num="13"></div></td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td><div class="pixel" data-num="21"></div></td>
+        <td><div class="pixel" data-num="10"></div></td>
+        <td><div class="pixel" data-num="4"></div></td>
+        <td><div class="pixel marked" data-num="1"></div></td>
+        <td><div class="pixel" data-num="5"></div></td>
+        <td><div class="pixel" data-num="14"></div></td>
+    </tr>
+    <tr>
+        <td><div class="pixel" data-num="20"></div></td>
+        <td><div class="pixel" data-num="9"></div></td>
+        <td><div class="pixel" data-num="3"></div></td>
+        <td><div class="pixel" data-num="2"></div></td>
+        <td><div class="pixel" data-num="6"></div></td>
+        <td><div class="pixel" data-num="15"></div></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><div class="pixel" data-num="19"></div></td>
+        <td><div class="pixel" data-num="8"></div></td>
+        <td><div class="pixel" data-num="7"></div></td>
+        <td><div class="pixel" data-num="16"></div></td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+        <td><div class="pixel" data-num="18"></div></td>
+        <td><div class="pixel" data-num="17"></div></td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+<table id="board">
+    <tr>
+        <td>
+            <div class="control">
+                <div class="el" data-color="r">Red</div>
+            </div>
+        </td>
+        <td>
+            <div class="control">
+                <div class="el" data-color="g">Green</div>
+            </div>
+        </td>
+        <td>
+            <div class="control">
+                <div class="el" data-color="b">Blue</div>
+            </div>
+        </td>
+    </tr>
+</table>
+<script>
+    $(function() {
+        $.postJSON = function (url, data, options) {
+            var ajaxOptions = $.extend(
+                    {},
+                    options || {},
+                    {
+                        data : JSON.stringify(data || {}),
+                        contentType : 'application/json',
+                        type : 'POST'
+                    }
+            );
+            return $.ajax(url, ajaxOptions);
+        };
+
+        var dmx = [];
+        var pixels = $('.pixel');
+        var markedPixel = pixels.filter('.pixel.marked');
+
+        cssToInt = function (str) {
+            var i;
+            if ($.isNumeric(str)) {
+                i = parseInt(str, 10);
+            } else if ('auto' === str) {
+                i = 0;
+            } else if (!str) {
+                i = 0;
+            } else if (str.lastIndexOf('px') === str.length - 2) {
+                i = parseInt(str.substr(0, str.length - 2), 10);
+            }
+
+            return i || 0;
+        };
+
+        getPixel = function(num) {
+            var pixel;
+            if ($.isNumeric(num)) {
+                pixel = $('.pixel[data-num=' + num + ']');
+            } else if (num && $.isFunction(num.data)) {
+                pixel = num;
+            }
+
+            return pixel;
+        };
+
+        updateControls = function(rgb) {
+            $.each(rgb, function(key, value) {
+                $('#board .control .el[data-color="' + key + '"]').css('margin-top', (255 - value) + 'px');
+            });
+        };
+
+        getControlsRGB = function() {
+            return {
+                r: 255 - cssToInt($('#board .control .el[data-color="r"]').css('margin-top')),
+                g: 255 - cssToInt($('#board .control .el[data-color="g"]').css('margin-top')),
+                b: 255 - cssToInt($('#board .control .el[data-color="b"]').css('margin-top'))
+            }
+        };
+
+        getPixelRGB = function (num) {
+            var pixel = getPixel(num);
+            if (!pixel) {
+                return { r: 0, g: 0, b: 0 };
+            }
+            var index = (pixel.data('num') - 1) * 3;
+
+            return {
+                r: dmx[index],
+                g: dmx[index + 1],
+                b: dmx[index + 2]
+            }
+        };
+
+        setPixelRGB = function (num, rgb) {
+            var pixel = getPixel(num);
+            if (!pixel) {
+                return;
+            }
+
+            var index = (pixel.data('num') - 1) * 3;
+            var color = rgb || getPixelRGB(pixel);
+            var data = {};
+
+            data[index + 1] = color.r;
+            data[index + 2] = color.g;
+            data[index + 3] = color.b;
+
+            var sendData = false;
+            $.each(data, function(key, value) {
+                if (dmx[key] !== value) {
+                    sendData = true;
+                    return false;
+                }
+            });
+
+            if (sendData) {
+                $.postJSON('{URL}/dmx', data).done(function(data) {
+                    if (data.dmx) {
+                        dmx = data.dmx;
+                    }
+                });
+            }
+        }
+
+        updatePixelColor = function (num, rgb) {
+            var pixel = getPixel(num);
+            if (!pixel) {
+                return;
+            }
+
+            var color = rgb || getPixelRGB(num);
+            pixel.css("background-color", 'rgb(' + color.r + ', ' + color.g + ', ' + color.b + ')');
+            setPixelRGB(pixel, color);
+
+        };
+
+        $.get('{URL}/dmx').done(function(data) {
+            dmx = data.dmx;
+            pixels.each(function(index, el) {
+                var $el =$(el);
+                var pixelNum = $el.data('num');
+                var pixelColor = getPixelRGB(pixelNum)
+
+                if ($el.is(markedPixel)) {
+                    updateControls(pixelColor);
+                }
+
+                updatePixelColor($el, pixelColor);
+            });
+        });
+
+        pixels.click(function() {
+            var $el = $(this);
+            if (markedPixel) {
+                markedPixel.removeClass('marked');
+            }
+
+            if ($el.is(markedPixel)) {
+                markedPixel = null;
+            } else {
+                markedPixel = $el.addClass('marked');
+            }
+            updateControls(getPixelRGB(markedPixel));
+        });
+
+        var controlEl;
+        $('#board .control .el').mousedown(function(e) {
+            if (markedPixel) {
+                controlEl = $(this);
+                controlEl.data('y', e.pageY)
+            }
+        });
+
+        $('#board .control .el').mouseup(function() {
+            controlEl = null;
+        });
+
+        $('#board .control .el').mouseleave(function() {
+            controlEl = null;
+        });
+
+        $('#board .control .el').mouseout(function() {
+            controlEl = null;
+        });
+
+        $('#board .control .el').mousemove(function(e) {
+            if (!controlEl) {
+                return;
+            }
+
+            var offsetY = e.pageY - controlEl.data('y');
+            controlEl.data('y', e.pageY);
+
+            var top = cssToInt(controlEl.css('margin-top'));
+            top += offsetY;
+
+            if (top > 255) {
+                top = 255;
+            } else if (top < 0) {
+                top = 0;
+            }
+
+            controlEl.css('margin-top', top + 'px');
+            updatePixelColor(markedPixel, getControlsRGB());
+        });
+    });
+</script>
+</body>
+<html>
