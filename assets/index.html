@@ -255,19 +255,11 @@
             }
         });
 
-        $('#board .control .el').mouseup(function() {
+        $('body').mouseup(function() {
             controlEl = null;
         });
 
-        $('#board .control .el').mouseleave(function() {
-            controlEl = null;
-        });
-
-        $('#board .control .el').mouseout(function() {
-            controlEl = null;
-        });
-
-        $('#board .control .el').mousemove(function(e) {
+        $('body').mousemove(function(e) {
             if (!controlEl) {
                 return;
             }
