@@ -8,10 +8,16 @@ class Server
 
   constructor: (@port, @dmx) ->
 
-  run: ->
+  run: (options = {})->
+    defaultOptions = {
+    log: false,
+    'log level': 1
+    }
+    settings = _.extend {}, defaultOptions, options
+
     @app = express()
     @server = http.createServer @app
-    @io = io.listen @server
+    @io = io.listen @server, settings
 
     @app.use express.json()
 
@@ -26,8 +32,7 @@ class Server
         process.exit 1
         return
 
-      @server.listen @port
-
+    @server.listen @port
     @io.sockets.on 'connection', (socket) =>
         @dmx.getDMX (err, data) ->
           socket.emit 'data', { status: (if err then err else 'OK'), dmx: data }
